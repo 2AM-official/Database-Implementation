@@ -45,8 +45,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <sourceDirectory>${basedir}/src/main/resources/antlr4</sourceDirectory>
-                    <outputDirectory>${basedir}/target/generated-sources/edu/ucsd/CSE232B/parsers</outputDirectory>
+                    <sourceDirectory>${basedir}/resources/antlr4</sourceDirectory>
+                    <outputDirectory>${basedir}/src/edu/ucsd/CSE232B/parsers</outputDirectory>
                     <visitor>true</visitor>
                 </configuration>
             </plugin>

@@ -73,13 +73,16 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
         if(currentNode instanceof Element){
             Element currentElement = (Element)this.currentNode;
-            if(currentElement.getTagName().equals(tagName)){
-                result.add(this.currentNode);
+            NodeList elements = currentElement.getElementsByTagName(tagName);
+            for(int i=0; i<elements.getLength(); i++){
+                result.add(elements.item(i));
             }
         }
 
         return result;
     }
+
+
 
 
 }

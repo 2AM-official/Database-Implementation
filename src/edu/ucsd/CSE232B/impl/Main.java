@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) {
-        final String expression = "doc(\"j_caesar.xml\")//(ACT,PERSONAE)/TITLE/text()";
+        final String expression = "doc(\"j_caesar.xml\")//(ACT,PERSONAE)/TITLE";
 
         final ExpressionGrammarLexer lexer = new ExpressionGrammarLexer(CharStreams.fromString(expression));
         final CommonTokenStream tokens = new CommonTokenStream(lexer);

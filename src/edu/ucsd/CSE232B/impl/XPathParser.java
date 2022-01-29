@@ -57,7 +57,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             this.xmlDocument = builder.parse(xmlFile);
-            this.currentNode = xmlDocument.getDocumentElement();
+            this.currentNode = xmlDocument.getDocumentElement().getParentNode();
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
         }
@@ -68,10 +68,9 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         ArrayList<Node> result = new ArrayList<>();
         String tagName = ctx.getText();
 
-        if(currentNode instanceof Element){
-            Element currentElement = (Element)this.currentNode;
-            NodeList elements = currentElement.getElementsByTagName(tagName);
-            for(int i=0; i<elements.getLength(); i++){
+        NodeList elements = currentNode.getChildNodes();
+        for(int i=0; i<elements.getLength(); i++){
+            if(elements.item(i).getNodeName().equals(tagName)){
                 result.add(elements.item(i));
             }
         }

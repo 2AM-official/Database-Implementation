@@ -19,6 +19,7 @@ import java.util.*;
 public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
     private Document xmlDocument;
     private Node currentNode;
+    ArrayList<Node> currNodes = new ArrayList<>();
 
     public Document getXmlDocument() {
         return xmlDocument;
@@ -30,7 +31,6 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
     @Override public ArrayList<Node> visitDirectAbsolutePath(ExpressionGrammarParser.DirectAbsolutePathContext ctx) {
         visitDoc(ctx.doc());
-
         return visit(ctx.rp());
     }
 
@@ -61,7 +61,6 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
         }
-
         return null;
     }
 
@@ -150,6 +149,91 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
     }
 
     @Override
+    public ArrayList<Node> visitFilterRelativePath(ExpressionGrammarParser.FilterRelativePathContext ctx) {
+        this.currNodes = visit(ctx.rp());
+        return visit(ctx.f());
+    }
+
+    @Override
+    public ArrayList<Node> visitCommaRelativePath(ExpressionGrammarParser.CommaRelativePathContext ctx) {
+        ArrayList<Node> res = visit(ctx.rp(0));
+        ArrayList<Node> tmp = visit(ctx.rp(1));
+
+        for (Node node : tmp) {
+            if (!res.contains(node)) {
+                res.add(node);
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitRpFilter(ExpressionGrammarParser.RpFilterContext ctx) {
+        ArrayList<Node> res = new ArrayList<>();
+        if (visit(ctx.rp()).size() != 0) {
+            res.add(this.currentNode);
+        }
+        return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitEqualFilter(ExpressionGrammarParser.EqualFilterContext ctx) {
+        ArrayList<Node> res = new ArrayList<>();
+        ArrayList<Node> rp1 = visit(ctx.rp(0));
+        ArrayList<Node> rp2 = visit(ctx.rp(1));
+        for (Node x: rp1) {
+            for (Node y: rp2) {
+                if (x.isEqualNode(y)) {
+                    res.add(this.currentNode);
+                }
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitIsFilter(ExpressionGrammarParser.IsFilterContext ctx) {
+        ArrayList<Node> res = new ArrayList<>();
+        ArrayList<Node> rp1 = visit(ctx.rp(0));
+        ArrayList<Node> rp2 = visit(ctx.rp(1));
+        for (Node x: rp1) {
+            for (Node y: rp2) {
+                if (x.isSameNode(y)) {
+                    res.add(this.currentNode);
+                }
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitStringconstantFilter(ExpressionGrammarParser.StringconstantFilterContext ctx) {
+        ArrayList<Node> res = new ArrayList<>();
+        ArrayList<Node> rp = visit(ctx.rp());
+        String s = ctx.getText().substring(1, ctx.getText().length()-1);
+        for (Node x : rp) {
+            if (x.getTextContent().equals(s)){
+                res.add(this.currentNode);
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitParentheseFilter(ExpressionGrammarParser.ParentheseFilterContext ctx) {
+        return visit(ctx.f());
+    }
+
+    @Override
+    public ArrayList<Node> visitAndFilter(ExpressionGrammarParser.AndFilterContext ctx) {
+        //ArrayList<Node> res = new ArrayList<>();
+        ArrayList<Node> f1 = visit(ctx.f(0));
+        ArrayList<Node> f2 = visit(ctx.f(1));
+        f1.retainAll(f2);
+        return f1;
+    }
+
+    @Override
     public ArrayList<Node> visitIndirectRelativePath(ExpressionGrammarParser.IndirectRelativePathContext ctx) {
         ArrayList<Node> x = visit(ctx.rp(0));
 
@@ -167,5 +251,17 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             }
         }
         return new ArrayList<>(result);
+    }
+    @Override
+    public ArrayList<Node> visitOrFilter(ExpressionGrammarParser.OrFilterContext ctx) {
+        ArrayList<Node> f1 = visit(ctx.f(0));
+        ArrayList<Node> f2 = visit(ctx.f(1));
+        f1.addAll(f2);
+        return f1;
+    }
+
+    @Override
+    public ArrayList<Node> visitNotFilter(ExpressionGrammarParser.NotFilterContext ctx) {
+        return super.visitNotFilter(ctx);
     }
 }

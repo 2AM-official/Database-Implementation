@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) {
-        final String expression = "doc(\"j_caesar.xml\")//time";
+        final String expression = "doc(\"j_caesar.xml\")//(ACT,PERSONAE)/TITLE/text()";
 
         final ExpressionGrammarLexer lexer = new ExpressionGrammarLexer(CharStreams.fromString(expression));
         final CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -21,7 +21,7 @@ public class Main {
         final XPathParser xPathParser = new XPathParser();
         final ArrayList<Node> nodes = xPathParser.visit(tree);
         for(Node node: nodes){
-            System.out.println(node.getTextContent());
+            System.out.println("node: "+node.getTextContent()+" "+node.hashCode());
         }
     }
 }

@@ -53,6 +53,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
     @Override public ArrayList<Node> visitDoc(ExpressionGrammarParser.DocContext ctx) {
         try {
+            // TODO: string things
             File xmlFile = new File(ctx.fileName().getText().substring(1, ctx.fileName().getText().length()-1));
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
@@ -159,6 +160,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         ArrayList<Node> tmp = visit(ctx.rp(1));
 
         for (Node node : tmp) {
+            // contains solved
             if (!res.contains(node)) {
                 res.add(node);
             }
@@ -169,52 +171,94 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
     @Override
     public ArrayList<Node> visitRpFilter(ExpressionGrammarParser.RpFilterContext ctx) {
         ArrayList<Node> res = new ArrayList<>();
-        if (visit(ctx.rp()).size() != 0) {
-            res.add(this.currentNode);
+        Node nodeRestore = this.currentNode;
+        for (Node currNode: currNodes) {
+            this.currentNode = currNode;
+            if (!visit(ctx.rp()).isEmpty()){
+                res.add(currNode);
+            }
         }
+        this.currentNode = nodeRestore;
+//        if (visit(ctx.rp()).size() != 0) {
+//            res.add(this.currentNode);
+//        }
         return res;
     }
 
     @Override
     public ArrayList<Node> visitEqualFilter(ExpressionGrammarParser.EqualFilterContext ctx) {
         ArrayList<Node> res = new ArrayList<>();
-        ArrayList<Node> rp1 = visit(ctx.rp(0));
-        ArrayList<Node> rp2 = visit(ctx.rp(1));
-        for (Node x: rp1) {
-            for (Node y: rp2) {
-                if (x.isEqualNode(y)) {
-                    res.add(this.currentNode);
+        Node nodeRestore = this.currentNode;
+        for (Node currNode: currNodes) {
+            this.currentNode = currNode;
+            ArrayList<Node> rp1 = visit(ctx.rp(0));
+            this.currentNode = currNode;
+            ArrayList<Node> rp2 = visit(ctx.rp(1));
+
+            boolean breakFlag = false;
+            for (Node x: rp1) {
+                for (Node y: rp2) {
+                    if (x.isEqualNode(y)) {
+                        res.add(currNode);
+                        breakFlag = true;
+                        break;
+                    }
+                }
+                if(breakFlag){
+                    break;
                 }
             }
         }
+        this.currentNode = nodeRestore;
         return res;
     }
 
     @Override
     public ArrayList<Node> visitIsFilter(ExpressionGrammarParser.IsFilterContext ctx) {
         ArrayList<Node> res = new ArrayList<>();
-        ArrayList<Node> rp1 = visit(ctx.rp(0));
-        ArrayList<Node> rp2 = visit(ctx.rp(1));
-        for (Node x: rp1) {
-            for (Node y: rp2) {
-                if (x.isSameNode(y)) {
-                    res.add(this.currentNode);
+        Node nodeRestore = this.currentNode;
+        for (Node currNode: currNodes) {
+            this.currentNode = currNode;
+            ArrayList<Node> rp1 = visit(ctx.rp(0));
+            this.currentNode = currNode;
+            ArrayList<Node> rp2 = visit(ctx.rp(1));
+
+            boolean breakFlag = false;
+            for (Node x: rp1) {
+                for (Node y: rp2) {
+                    if (x.isSameNode(y)) {
+                        res.add(currNode);
+                        breakFlag = true;
+                        break;
+                    }
+                }
+                if(breakFlag){
+                    break;
                 }
             }
         }
+        this.currentNode = nodeRestore;
         return res;
     }
 
     @Override
     public ArrayList<Node> visitStringconstantFilter(ExpressionGrammarParser.StringconstantFilterContext ctx) {
         ArrayList<Node> res = new ArrayList<>();
-        ArrayList<Node> rp = visit(ctx.rp());
-        String s = ctx.getText().substring(1, ctx.getText().length()-1);
-        for (Node x : rp) {
-            if (x.getTextContent().equals(s)){
-                res.add(this.currentNode);
+        Node nodeRestore = this.currentNode;
+        for (Node currNode: currNodes) {
+            this.currentNode = currNode;
+            ArrayList<Node> rp = visit(ctx.rp());
+            // TODO: string things !!!
+            String s = ctx.getText().substring(1, ctx.getText().length()-1);
+            for (Node x : rp) {
+                // TODO: getTextContent.
+                if (x.getTextContent().equals(s)){
+                    res.add(currNode);
+                    break;
+                }
             }
         }
+        this.currentNode = nodeRestore;
         return res;
     }
 
@@ -255,12 +299,24 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
     public ArrayList<Node> visitOrFilter(ExpressionGrammarParser.OrFilterContext ctx) {
         ArrayList<Node> f1 = visit(ctx.f(0));
         ArrayList<Node> f2 = visit(ctx.f(1));
-        f1.addAll(f2);
+        // remove duplicate when adding f2 to f1
+        for (Node f2Node: f2) {
+            if (! f1.contains(f2Node)) {
+                f1.add(f2Node);
+            }
+        }
         return f1;
     }
 
     @Override
     public ArrayList<Node> visitNotFilter(ExpressionGrammarParser.NotFilterContext ctx) {
-        return super.visitNotFilter(ctx);
+        ArrayList<Node> f1 = visit(ctx.f());
+        ArrayList<Node> res = new ArrayList<>();
+        for (Node currNode: currNodes) {
+            if (!f1.contains(currNode)) {
+                res.add(currNode);
+            }
+        }
+        return res;
     }
 }

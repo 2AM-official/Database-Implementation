@@ -29,6 +29,24 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         this.xmlDocument = xmlDocument;
     }
 
+    public String parseStr(String str){
+        String result = str.substring(1, str.length()-1);
+        char quote = str.charAt(0);
+        StringBuilder stringBuilder = new StringBuilder();
+        for(int i=0; i<result.length(); i++){
+            if(result.charAt(i)=='\\' && i+1<result.length()){
+                if(quote=='\'' && result.charAt(i+1)=='\"'){
+                    continue;
+                }else if(quote=='\"' && result.charAt(i+1)=='\''){
+                    continue;
+                }
+            }
+            stringBuilder.append(result.charAt(i));
+        }
+
+        return stringBuilder.toString();
+    }
+
     @Override public ArrayList<Node> visitDirectAbsolutePath(ExpressionGrammarParser.DirectAbsolutePathContext ctx) {
         visitDoc(ctx.doc());
         return visit(ctx.rp());
@@ -53,8 +71,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
     @Override public ArrayList<Node> visitDoc(ExpressionGrammarParser.DocContext ctx) {
         try {
-            // TODO: string things
-            File xmlFile = new File(ctx.fileName().getText().substring(1, ctx.fileName().getText().length()-1));
+            File xmlFile = new File(parseStr(ctx.fileName().getText()));
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             this.xmlDocument = builder.parse(xmlFile);
@@ -186,7 +203,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
     }
 
     @Override
-    public ArrayList<Node> visitEqualFilter(ExpressionGrammarParser.EqualFilterContext ctx) {
+    public ArrayList<Node> visitEqual1Filter(ExpressionGrammarParser.Equal1FilterContext ctx) {
         ArrayList<Node> res = new ArrayList<>();
         Node nodeRestore = this.currentNode;
         for (Node currNode: currNodes) {
@@ -211,6 +228,34 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         }
         this.currentNode = nodeRestore;
         return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitEqual2Filter(ExpressionGrammarParser.Equal2FilterContext ctx) {
+        ArrayList<Node> result = new ArrayList<>();
+        Node nodeRestore = this.currentNode;
+        for (Node currNode: currNodes) {
+            this.currentNode = currNode;
+            ArrayList<Node> rp1 = visit(ctx.rp(0));
+            this.currentNode = currNode;
+            ArrayList<Node> rp2 = visit(ctx.rp(1));
+
+            boolean breakFlag = false;
+            for (Node x: rp1) {
+                for (Node y: rp2) {
+                    if (x.isEqualNode(y)) {
+                        result.add(currNode);
+                        breakFlag = true;
+                        break;
+                    }
+                }
+                if(breakFlag){
+                    break;
+                }
+            }
+        }
+        this.currentNode = nodeRestore;
+        return result;
     }
 
     @Override
@@ -248,8 +293,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         for (Node currNode: currNodes) {
             this.currentNode = currNode;
             ArrayList<Node> rp = visit(ctx.rp());
-            // TODO: string things !!!
-            String s = ctx.getText().substring(1, ctx.getText().length()-1);
+            String s = parseStr(ctx.getText());
             for (Node x : rp) {
                 // TODO: getTextContent.
                 if (x.getTextContent().equals(s)){

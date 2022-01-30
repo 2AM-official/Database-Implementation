@@ -25,7 +25,8 @@ rp  : tagName       #tagRelativePath
     ;
 
 f   : rp            #rpFilter
-    | rp EQ rp      #equalFilter
+    | rp '=' rp     #equal1Filter
+    | rp 'eq' rp    #equal2Filter // can not merge to one?
     | rp IS rp      #isFilter
     | rp '=' STRCON #stringconstantFilter
     | '(' f ')'     #parentheseFilter
@@ -38,7 +39,6 @@ f   : rp            #rpFilter
  attName: ID;
  fileName: STRCON;
 
- EQ: '=' | 'eq';
  IS: '==' | 'is';
  ID: [_a-zA-Z][a-zA-Z_0-9]*;
 

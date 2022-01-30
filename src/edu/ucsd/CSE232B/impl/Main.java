@@ -10,12 +10,15 @@ import org.w3c.dom.Node;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 
 public class Main {
-    public static void main(String[] args) throws TransformerException {
+    public static void main(String[] args) throws TransformerException, IOException {
         String expression = args[0];
+        String outputFileName = args[1];
 
         final ExpressionGrammarLexer lexer = new ExpressionGrammarLexer(CharStreams.fromString(expression));
         final CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -30,18 +33,21 @@ public class Main {
         Transformer trans = transfac.newTransformer();
         trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         trans.setOutputProperty(OutputKeys.INDENT, "yes");
+        trans.setOutputProperty(OutputKeys.METHOD, "xml");
 
         // Print the DOM node
 
 //        System.out.println(nodes.size());
         StringWriter sw = new StringWriter();
-        StreamResult result = new StreamResult(sw);
+        FileWriter fw = new FileWriter(outputFileName);
+        StreamResult result = new StreamResult(fw);
+
+        fw.write("<ROOT>\n");
         for(int i=0; i<nodes.size(); i++){
-            sw.write("result "+i+":\n");
             DOMSource source = new DOMSource(nodes.get(i));
             trans.transform(source, result);
-            sw.write("\n");
         }
-        System.out.println(sw.toString());
+        fw.write("</ROOT>");
+        fw.close();
     }
 }

@@ -18,7 +18,6 @@ import java.util.ArrayList;
 public class Main {
     public static void main(String[] args) throws TransformerException, IOException {
         String expression = args[0];
-        String outputFileName = args[1];
 
         final ExpressionGrammarLexer lexer = new ExpressionGrammarLexer(CharStreams.fromString(expression));
         final CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -36,18 +35,14 @@ public class Main {
         trans.setOutputProperty(OutputKeys.METHOD, "xml");
 
         // Print the DOM node
-
-//        System.out.println(nodes.size());
         StringWriter sw = new StringWriter();
-        FileWriter fw = new FileWriter(outputFileName);
-        StreamResult result = new StreamResult(fw);
+        StreamResult result = new StreamResult(sw);
 
-        fw.write("<ROOT>\n");
         for(int i=0; i<nodes.size(); i++){
             DOMSource source = new DOMSource(nodes.get(i));
             trans.transform(source, result);
         }
-        fw.write("</ROOT>");
-        fw.close();
+        System.out.println(sw);
+        System.out.println(nodes.size());
     }
 }

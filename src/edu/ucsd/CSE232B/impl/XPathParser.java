@@ -105,20 +105,15 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
     @Override
     public ArrayList<Node> visitChildrenRelativePath(ExpressionGrammarParser.ChildrenRelativePathContext ctx) {
-        HashSet<Node> result = new HashSet<>();
-        LinkedList<Node> bfsQueue = new LinkedList<>();
-        bfsQueue.addLast(currentNode);
-        while(!bfsQueue.isEmpty()){
-            Node node = bfsQueue.getFirst();
-            for(int i=0; i<node.getChildNodes().getLength(); i++){
-                result.add(node.getChildNodes().item(i));
-                if(node.getChildNodes().item(i).hasChildNodes()){
-                    bfsQueue.addLast(node.getChildNodes().item(i));
-                }
+        ArrayList<Node> result = new ArrayList<>();
+        NodeList elements = currentNode.getChildNodes();
+        for(int i=0; i<elements.getLength(); i++){
+            if(elements.item(i) instanceof Element){
+                result.add(elements.item(i));
             }
-            bfsQueue.removeFirst();
         }
-        return new ArrayList<>(result);
+
+        return result;
     }
 
     @Override
@@ -293,7 +288,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         for (Node currNode: currNodes) {
             this.currentNode = currNode;
             ArrayList<Node> rp = visit(ctx.rp());
-            String s = parseStr(ctx.getText());
+            String s = parseStr(ctx.STRCON().getText());
             for (Node x : rp) {
                 // TODO: getTextContent.
                 if (x.getTextContent().equals(s)){

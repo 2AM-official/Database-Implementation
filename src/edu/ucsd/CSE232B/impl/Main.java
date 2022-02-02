@@ -14,35 +14,41 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) throws TransformerException, IOException {
-        String expression = args[0];
+        Scanner scanner = new Scanner(System.in);
+//        String expression = args[0];
+        while(true) {
+            System.out.println("Input your XPath Query: ");
+            String expression = scanner.nextLine();
 
-        final ExpressionGrammarLexer lexer = new ExpressionGrammarLexer(CharStreams.fromString(expression));
-        final CommonTokenStream tokens = new CommonTokenStream(lexer);
-        final ExpressionGrammarParser parser = new ExpressionGrammarParser(tokens);
+            final ExpressionGrammarLexer lexer = new ExpressionGrammarLexer(CharStreams.fromString(expression));
+            final CommonTokenStream tokens = new CommonTokenStream(lexer);
+            final ExpressionGrammarParser parser = new ExpressionGrammarParser(tokens);
 
-        final ParseTree tree = parser.ap();
-        final XPathParser xPathParser = new XPathParser();
-        final ArrayList<Node> nodes = xPathParser.visit(tree);
+            final ParseTree tree = parser.ap();
+            final XPathParser xPathParser = new XPathParser();
+            final ArrayList<Node> nodes = xPathParser.visit(tree);
 
-        // Set up the output transformer
-        TransformerFactory transfac = TransformerFactory.newInstance();
-        Transformer trans = transfac.newTransformer();
-        trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-        trans.setOutputProperty(OutputKeys.INDENT, "yes");
-        trans.setOutputProperty(OutputKeys.METHOD, "xml");
+            // Set up the output transformer
+            TransformerFactory transfac = TransformerFactory.newInstance();
+            Transformer trans = transfac.newTransformer();
+            trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            trans.setOutputProperty(OutputKeys.INDENT, "yes");
+            trans.setOutputProperty(OutputKeys.METHOD, "xml");
 
-        // Print the DOM node
-        StringWriter sw = new StringWriter();
-        StreamResult result = new StreamResult(sw);
+            // Print the DOM node
+            StringWriter sw = new StringWriter();
+            StreamResult result = new StreamResult(sw);
 
-        for(int i=0; i<nodes.size(); i++){
-            DOMSource source = new DOMSource(nodes.get(i));
-            trans.transform(source, result);
+            for (int i = 0; i < nodes.size(); i++) {
+                DOMSource source = new DOMSource(nodes.get(i));
+                trans.transform(source, result);
+            }
+            System.out.println(sw);
+            System.out.println(nodes.size());
         }
-        System.out.println(sw);
-        System.out.println(nodes.size());
     }
 }

@@ -58,14 +58,18 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         HashSet<Node> result = new HashSet<>();
         LinkedList<Node> bfsQueue = new LinkedList<>();
         bfsQueue.addLast(xmlDocument.getDocumentElement());
+        Node nodeRestore = this.currentNode;
         while(!bfsQueue.isEmpty()){
             this.currentNode = bfsQueue.getFirst();
             result.addAll(visit(ctx.rp()));
-            for(int i=0; i<this.currentNode.getChildNodes().getLength(); i++){
-                bfsQueue.addLast(this.currentNode.getChildNodes().item(i));
+            for(int i=0; i<bfsQueue.getFirst().getChildNodes().getLength(); i++){
+                if(bfsQueue.getFirst().getChildNodes().item(i) instanceof Element){
+                    bfsQueue.addLast(bfsQueue.getFirst().getChildNodes().item(i));
+                }
             }
             bfsQueue.removeFirst();
         }
+        this.currentNode = nodeRestore;
         return new ArrayList<>(result);
     }
 
@@ -152,10 +156,12 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
     public ArrayList<Node> visitDirectRelativePath(ExpressionGrammarParser.DirectRelativePathContext ctx) {
         ArrayList<Node> x = visit(ctx.rp(0));
         HashSet<Node> result = new HashSet<>();
+        Node originalCurNode = currentNode;
         for(Node node: x){
             this.currentNode = node;
             result.addAll(visit(ctx.rp(1)));
         }
+        currentNode = originalCurNode;
 
         return new ArrayList<>(result);
     }
@@ -168,8 +174,11 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
     @Override
     public ArrayList<Node> visitCommaRelativePath(ExpressionGrammarParser.CommaRelativePathContext ctx) {
+        Node oriCurNode = currentNode;
         ArrayList<Node> res = visit(ctx.rp(0));
+        currentNode = oriCurNode;
         ArrayList<Node> tmp = visit(ctx.rp(1));
+        currentNode = oriCurNode;
 
         for (Node node : tmp) {
             // contains solved
@@ -308,7 +317,6 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
     @Override
     public ArrayList<Node> visitAndFilter(ExpressionGrammarParser.AndFilterContext ctx) {
-        //ArrayList<Node> res = new ArrayList<>();
         ArrayList<Node> f1 = visit(ctx.f(0));
         ArrayList<Node> f2 = visit(ctx.f(1));
         f1.retainAll(f2);
@@ -321,17 +329,19 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
         HashSet<Node> result = new HashSet<>();
         LinkedList<Node> bfsQueue = new LinkedList<>();
+        Node nodeRestore = this.currentNode;
         for(Node node: x){
             bfsQueue.addLast(node);
             while(!bfsQueue.isEmpty()){
                 this.currentNode = bfsQueue.getFirst();
                 result.addAll(visit(ctx.rp(1)));
-                for(int i=0; i<this.currentNode.getChildNodes().getLength(); i++){
-                    bfsQueue.addLast(this.currentNode.getChildNodes().item(i));
+                for(int i=0; i<bfsQueue.getFirst().getChildNodes().getLength(); i++){
+                    bfsQueue.addLast(bfsQueue.getFirst().getChildNodes().item(i));
                 }
                 bfsQueue.removeFirst();
             }
         }
+        this.currentNode = nodeRestore;
         return new ArrayList<>(result);
     }
     @Override

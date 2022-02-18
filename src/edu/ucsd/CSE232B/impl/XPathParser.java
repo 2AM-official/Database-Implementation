@@ -14,6 +14,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
@@ -365,6 +366,91 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             if (!f1.contains(currNode)) {
                 res.add(currNode);
             }
+        }
+        return res;
+    }
+
+
+    @Override
+    public ArrayList<Node> visitEq1Cond(ExpressionGrammarParser.Eq1CondContext ctx) {
+        ArrayList<Node> pointer = new ArrayList<>();
+        ArrayList<Node> c1 = visit(ctx.xq(0));
+        ArrayList<Node> c2 = visit(ctx.xq(1));
+        for (Node n1: c1) {
+            for (Node n2: c2) {
+                if (n1.isEqualNode(n2)) {
+                    pointer.add(n1);
+                    return pointer;
+                }
+            }
+        }
+        return pointer;
+    }
+
+    @Override
+    public ArrayList<Node> visitIsCond(ExpressionGrammarParser.IsCondContext ctx) {
+        ArrayList<Node> pointer = new ArrayList<>();
+        ArrayList<Node> c1 = visit(ctx.xq(0));
+        ArrayList<Node> c2 = visit(ctx.xq(1));
+        for (Node n1: c1) {
+            for (Node n2 : c2) {
+                if (n1.isSameNode(n2)) {
+                    pointer.add(n1);
+                    return pointer;
+                }
+            }
+        }
+        return pointer;
+    }
+
+    @Override
+    public ArrayList<Node> visitEmptyCond(ExpressionGrammarParser.EmptyCondContext ctx) {
+        ArrayList<Node> res = new ArrayList<>();
+        //Node node= this.currentNode;
+        ArrayList<Node> xq1 = visit(ctx.xq());
+        if (xq1.isEmpty()) {
+            Node flag = xmlDocument.createTextNode("pointer");
+            res.add(flag);
+        }
+        return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitBraceCond(ExpressionGrammarParser.BraceCondContext ctx) {
+        return visit(ctx.cond());
+    }
+
+    @Override
+    public ArrayList<Node> visitAndCond(ExpressionGrammarParser.AndCondContext ctx) {
+        ArrayList<Node> res = new ArrayList<>();
+        ArrayList<Node> c1 = visit(ctx.cond(0));
+        ArrayList<Node> c2 = visit(ctx.cond(1));
+
+        if (!c1.isEmpty() && !c2.isEmpty()) {
+            Node flag = xmlDocument.createTextNode("pointer");
+            res.add(flag);
+        }
+        return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitOrCond(ExpressionGrammarParser.OrCondContext ctx) {
+        ArrayList<Node> c1 = visit(ctx.cond(0));
+        ArrayList<Node> c2 = visit(ctx.cond(1));
+
+        if (!c1.isEmpty()) return c1;
+        if (!c2.isEmpty()) return c2;
+        return c1;
+    }
+
+    @Override
+    public ArrayList<Node> visitNotCond(ExpressionGrammarParser.NotCondContext ctx) {
+        ArrayList<Node> res = new ArrayList<>();
+        ArrayList<Node> c1 = visit(ctx.cond());
+
+        if (c1.isEmpty()) {
+            Node flag = xmlDocument.createTextNode("pointer");
+            res.add(flag);
         }
         return res;
     }

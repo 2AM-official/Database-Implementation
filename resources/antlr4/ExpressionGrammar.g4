@@ -4,6 +4,34 @@ grammar ExpressionGrammar ;
 package edu.ucsd.CSE232B.parsers;
 }
 
+xq  : var                                           #varXQ
+    | STRCON                                        #strXQ
+    | ap                                            #apXQ
+    | '(' xq ')'                                    #braceXQ
+    | xq ',' xq                                     #commaXQ
+    | xq '/' rp                                     #directXQ
+    | xq '//' rp                                    #indirectXQ
+    | '<' tagName '>' '{' xq '}' '</' tagName '>'   #tagNameXQ
+    | forClause letClause? whereClause? returnClause #statementXQ
+    | letClause xq                                   #letXQ
+    ;
+
+forClause  : 'for' var 'in' xq (',' var 'in' xq)* ;
+letClause  : 'let' var ':=' xq (',' var 'in' xq)* ;
+whereClause : 'where' cond ;
+returnClause: 'return' xq ;
+
+cond: xq 'eq' xq                                               #eq1Cond
+    | xq '=' xq                                                #eq2Cond
+    | xq IS xq                                                 #isCond
+    | 'empty' '(' xq ')'                                       #emptyCond
+    | 'some' var 'in' xq (',' var 'in' xq)* 'satisfies' cond   #parSatisfyCond
+    | '(' cond ')'                                             #braceCond
+    | cond 'and' cond                                          #andCond
+    | cond 'or' cond                                           #orCond
+    | 'not' cond                                               #notCond
+    ;
+
 /*Rules*/
 doc: 'doc(' fileName ')' | 'document(' fileName ')';
 
@@ -35,6 +63,7 @@ f   : rp            #rpFilter
     | 'not' f       #notFilter
     ;
 
+ var: '$' ID;
  tagName: ID;
  attName: ID;
  fileName: STRCON;
@@ -49,3 +78,4 @@ f   : rp            #rpFilter
  ;
 
  WHITESPACE: [\r\n\t\f ]+ -> skip;
+

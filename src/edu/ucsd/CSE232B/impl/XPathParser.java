@@ -20,6 +20,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
     private Document xmlDocument;
     private Node currentNode;
     ArrayList<Node> currNodes = new ArrayList<>();
+    HashMap<String, Node> variableMap = new HashMap<>();
 
     public Document getXmlDocument() {
         return xmlDocument;
@@ -367,5 +368,98 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             }
         }
         return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitVarXQ(ExpressionGrammarParser.VarXQContext ctx) {
+        String varName = ctx.var().getText();
+        ArrayList<Node> result = new ArrayList<>();
+        if(variableMap.containsKey(varName)){
+            result.add(variableMap.get(varName));
+            return result;
+        }
+        return null;
+    }
+
+    @Override
+    public ArrayList<Node> visitStrXQ(ExpressionGrammarParser.StrXQContext ctx) {
+        Node textNode = xmlDocument.createTextNode(ctx.STRCON().getText());
+        ArrayList<Node> result = new ArrayList<>();
+        result.add(textNode);
+        return result;
+    }
+
+    @Override
+    public ArrayList<Node> visitApXQ(ExpressionGrammarParser.ApXQContext ctx) {
+        return visit(ctx.ap());
+    }
+
+    @Override
+    public ArrayList<Node> visitBraceXQ(ExpressionGrammarParser.BraceXQContext ctx) {
+        return visit(ctx.xq());
+    }
+
+    @Override
+    public ArrayList<Node> visitCommaXQ(ExpressionGrammarParser.CommaXQContext ctx) {
+        ArrayList<Node> result = visit(ctx.xq(0));
+        result.addAll(visit(ctx.xq(1)));
+
+        return result;
+    }
+
+    @Override
+    public ArrayList<Node> visitDirectXQ(ExpressionGrammarParser.DirectXQContext ctx) {
+        ArrayList<Node> x = visit(ctx.xq());
+        HashSet<Node> result = new HashSet<>();
+        Node originalCurNode = currentNode;
+        for(Node node: x){
+            this.currentNode = node;
+            result.addAll(visit(ctx.rp()));
+        }
+        currentNode = originalCurNode;
+
+        return new ArrayList<>(result);
+    }
+
+    @Override
+    public ArrayList<Node> visitIndirectXQ(ExpressionGrammarParser.IndirectXQContext ctx) {
+        ArrayList<Node> x = visit(ctx.xq());
+
+        HashSet<Node> result = new HashSet<>();
+        LinkedList<Node> bfsQueue = new LinkedList<>();
+        Node nodeRestore = this.currentNode;
+        for(Node node: x){
+            bfsQueue.addLast(node);
+            while(!bfsQueue.isEmpty()){
+                this.currentNode = bfsQueue.getFirst();
+                result.addAll(visit(ctx.rp()));
+                for(int i=0; i<bfsQueue.getFirst().getChildNodes().getLength(); i++){
+                    bfsQueue.addLast(bfsQueue.getFirst().getChildNodes().item(i));
+                }
+                bfsQueue.removeFirst();
+            }
+        }
+        this.currentNode = nodeRestore;
+        return new ArrayList<>(result);
+    }
+
+    @Override
+    public ArrayList<Node> visitTagNameXQ(ExpressionGrammarParser.TagNameXQContext ctx){
+        if(!ctx.tagName(0).getText().equals(ctx.tagName(1).getText())){
+            try {
+                throw new Exception("tag name not same");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+        Element ele = xmlDocument.createElement(ctx.tagName(0).getText());
+        ArrayList<Node> children = visit(ctx.xq());
+        for(Node child: children){
+            ele.appendChild(child);
+        }
+        ArrayList<Node> result = new ArrayList<>();
+        result.add(ele);
+        return result;
     }
 }

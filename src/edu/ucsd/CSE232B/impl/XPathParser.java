@@ -608,4 +608,54 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         }
         return res;
     }
+
+    @Override
+    public ArrayList<Node> visitLetXQ(ExpressionGrammarParser.LetXQContext ctx) {
+        int size = ctx.letClause().var().size();
+        for (int i = 0; i < size; i++) {
+            variableMap.put(ctx.letClause().var(i).getText(), visit(ctx.letClause().xq(i)));
+        }
+        return visit(ctx.letClause().xq(size));
+    }
+
+
+    @Override
+    public ArrayList<Node> visitStatementXQ(ExpressionGrammarParser.StatementXQContext ctx) {
+        ArrayList<Node> result = new ArrayList<>();
+        HashMap<String, ArrayList<Node>> current = new HashMap<>(variableMap);
+        ArrayList<HashMap<String, ArrayList<Node>>> path = new ArrayList<>();
+
+        path.add(current);
+        helper(ctx, 0, ctx.forClause().var().size(), result, path);
+        variableMap = path.get(path.size()-1);
+        return result;
+    }
+
+    //TODO: might have bugs
+    private void helper(ExpressionGrammarParser.StatementXQContext ctx, int depth, int length, ArrayList<Node> result,
+                        ArrayList<HashMap<String, ArrayList<Node>>> path) {
+        if (depth == length) {
+            if (ctx.letClause() != null) visit(ctx.letClause());
+            if (ctx.whereClause() != null && visit(ctx.whereClause()).size() == 0) {
+                return;
+            }
+            result.addAll(visit(ctx.returnClause()));
+            return;
+        }
+
+        String k = ctx.forClause().var(depth).getText();
+        ArrayList<Node> nodes = visit(ctx.forClause().xq(depth));
+        for (Node node: nodes) {
+            HashMap<String, ArrayList<Node>> n = new HashMap<>(variableMap);
+            ArrayList<Node> v= new ArrayList<>();
+            v.add(node);
+            n.put(k, v);
+
+            path.add(n);
+            variableMap = path.get(path.size()-1);
+            helper(ctx, depth+1, length, result, path);
+            path.remove(path.size()-1);
+            variableMap = path.get(path.size()-1);
+        }
+    }
 }

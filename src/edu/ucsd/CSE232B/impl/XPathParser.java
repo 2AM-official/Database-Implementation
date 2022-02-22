@@ -452,10 +452,13 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             }
             return null;
         }
-        Element ele = xmlDocument.createElement(ctx.tagName(0).getText());
         ArrayList<Node> children = visit(ctx.xq());
+        Element ele = xmlDocument.createElement(ctx.tagName(0).ID().getText());
         for(Node child: children){
-            ele.appendChild(child);
+            Node childCopy = child.cloneNode(true);
+            System.out.println(ele.getOwnerDocument().getDocumentURI());
+            System.out.println(childCopy.getOwnerDocument().getDocumentURI());
+            ele.appendChild(childCopy);
         }
         ArrayList<Node> result = new ArrayList<>();
         result.add(ele);
@@ -507,66 +510,92 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         return res;
     }
 
+    private boolean backtracking(ExpressionGrammarParser.ParSatisfyCondContext ctx, int depth, int length){
+        if(depth==length){
+            return !visit(ctx.cond()).isEmpty();
+        }
+        String varName = ctx.var(depth).ID().getText();
+        ArrayList<Node> nodes = visit(ctx.xq(depth));
+        ArrayList<Node> origin = variableMap.get(varName);
+        for(Node node: nodes){
+            ArrayList<Node> newVal = new ArrayList<>();
+            newVal.add(node);
+            variableMap.put(varName, newVal);
+            if(backtracking(ctx, depth+1, length)){
+                variableMap.put(varName, origin);
+                return true;
+            }
+        }
+        variableMap.put(varName, origin);
+        return false;
+    }
+
     @Override
     public ArrayList<Node> visitParSatisfyCond(ExpressionGrammarParser.ParSatisfyCondContext ctx) {
-        ArrayList<Node> res = new ArrayList<>();
-
-        Node nodeStore = this.currentNode;
-        HashMap<String, ArrayList<Node>> ctxStore = this.variableMap;
-
-        int n = ctx.xq().size();
-        ArrayList<ArrayList<Node>> xqResultArr = new ArrayList<>();
-        ArrayList<Integer> selectArr = new ArrayList<>();
-
-        for(int i=0; i<n; i++){
-            xqResultArr.add(visit(ctx.xq(i)));
-            selectArr.add(0);
-            if(xqResultArr.get(i).isEmpty()){
-                return new ArrayList<>();
-            }
-            ArrayList<Node> newVariableVal = new ArrayList<>();
-            newVariableVal.add(xqResultArr.get(i).get(0));
-            this.variableMap.put(ctx.var(i).ID().getText(), newVariableVal);
+        ArrayList<Node> result = new ArrayList<>();
+        if(backtracking(ctx, 0, ctx.var().size())){
+            result.add(xmlDocument.createElement("pointer"));
         }
+        return result;
+//        ArrayList<Node> res = new ArrayList<>();
+//
+//        Node nodeStore = this.currentNode;
+//        HashMap<String, ArrayList<Node>> ctxStore = this.variableMap;
+//
+//        int n = ctx.xq().size();
+//        ArrayList<ArrayList<Node>> xqResultArr = new ArrayList<>();
+//        ArrayList<Integer> selectArr = new ArrayList<>();
+//
+//        for(int i=0; i<n; i++){
+//            xqResultArr.add(visit(ctx.xq(i)));
+//            selectArr.add(0);
+//            if(xqResultArr.get(i).isEmpty()){
+//                return new ArrayList<>();
+//            }
+//            ArrayList<Node> newVariableVal = new ArrayList<>();
+//            newVariableVal.add(xqResultArr.get(i).get(0));
+//            this.variableMap.put(ctx.var(i).ID().getText(), newVariableVal);
+//        }
+//
+//        while(selectArr.get(0)<xqResultArr.get(0).size()){
+//            boolean flag = false;
+//            if(visit(ctx.cond()).size()>0){
+//                Node ele = xmlDocument.createTextNode("pointer");
+//                res.add(ele);
+//                return res;
+//            }
+//
+//            // update selected index list
+//            for(int i=n-1; i>=0; i--){
+//                if(selectArr.get(i)+1>=xqResultArr.get(i).size()){
+//                    // if the selected node is the last node of the result array
+//                    if(i==0){
+//                        flag = true;
+//                        break;
+//                    }
+//                    selectArr.set(i, 0);
+//                    ArrayList<Node> newVariableVal = new ArrayList<>();
+//                    newVariableVal.add(xqResultArr.get(i).get(0));
+//                    this.variableMap.put(ctx.var(i).ID().getText(), newVariableVal);
+//                    continue;
+//                }
+//                selectArr.set(i, selectArr.get(i)+1);
+//                ArrayList<Node> newVariableVal = new ArrayList<>();
+//                newVariableVal.add(xqResultArr.get(i).get(selectArr.get(i)));
+//                this.variableMap.put(ctx.var(i).ID().getText(), newVariableVal);
+//                break;
+//            }
+//
+//            if(flag){
+//                break;
+//            }
+//        }
+//
+//        this.currentNode = nodeStore;
+//        this.variableMap = ctxStore;
+//
+//        return res;
 
-        while(selectArr.get(0)<xqResultArr.get(0).size()){
-            boolean flag = false;
-            if(visit(ctx.cond()).size()>0){
-                Node ele = xmlDocument.createTextNode("pointer");
-                res.add(ele);
-                return res;
-            }
-
-            // update selected index list
-            for(int i=n-1; i>=0; i--){
-                if(selectArr.get(i)+1>=xqResultArr.get(i).size()){
-                    // if the selected node is the last node of the result array
-                    if(i==0){
-                        flag = true;
-                        break;
-                    }
-                    selectArr.set(i, 0);
-                    ArrayList<Node> newVariableVal = new ArrayList<>();
-                    newVariableVal.add(xqResultArr.get(i).get(0));
-                    this.variableMap.put(ctx.var(i).ID().getText(), newVariableVal);
-                    continue;
-                }
-                selectArr.set(i, selectArr.get(i)+1);
-                ArrayList<Node> newVariableVal = new ArrayList<>();
-                newVariableVal.add(xqResultArr.get(i).get(selectArr.get(i)));
-                this.variableMap.put(ctx.var(i).ID().getText(), newVariableVal);
-                break;
-            }
-
-            if(flag){
-                break;
-            }
-        }
-
-        this.currentNode = nodeStore;
-        this.variableMap = ctxStore;
-
-        return res;
     }
 
     @Override
@@ -613,7 +642,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
     public ArrayList<Node> visitLetXQ(ExpressionGrammarParser.LetXQContext ctx) {
         int size = ctx.letClause().var().size();
         for (int i = 0; i < size; i++) {
-            variableMap.put(ctx.letClause().var(i).getText(), visit(ctx.letClause().xq(i)));
+            variableMap.put(ctx.letClause().var(i).ID().getText(), visit(ctx.letClause().xq(i)));
         }
         return visit(ctx.letClause().xq(size));
     }
@@ -644,7 +673,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             return;
         }
 
-        String k = ctx.forClause().var(depth).getText();
+        String k = ctx.forClause().var(depth).ID().getText();
         ArrayList<Node> nodes = visit(ctx.forClause().xq(depth));
         for (Node node: nodes) {
             HashMap<String, ArrayList<Node>> n = new HashMap<>(variableMap);
@@ -665,7 +694,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         ArrayList<Node> res = new ArrayList<>();
         int size = ctx.var().size();
         for (int i = 0; i < size; i++) {
-            this.variableMap.put(ctx.var(i).getText(), visit(ctx.xq(i)));
+            this.variableMap.put(ctx.var(i).ID().getText(), visit(ctx.xq(i)));
         }
         return res;
     }

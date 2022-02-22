@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.w3c.dom.Node;
 
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
@@ -17,18 +18,18 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) throws TransformerException, IOException {
+    public static void main(String[] args) throws TransformerException, IOException, ParserConfigurationException {
         Scanner scanner = new Scanner(System.in);
 //        String expression = args[0];
         while(true) {
-            System.out.println("Input your XPath Query: ");
+            System.out.println("Input your XQuery Query: ");
             String expression = scanner.nextLine();
 
             final ExpressionGrammarLexer lexer = new ExpressionGrammarLexer(CharStreams.fromString(expression));
             final CommonTokenStream tokens = new CommonTokenStream(lexer);
             final ExpressionGrammarParser parser = new ExpressionGrammarParser(tokens);
 
-            final ParseTree tree = parser.ap();
+            final ParseTree tree = parser.xq();
             final XPathParser xPathParser = new XPathParser();
             final ArrayList<Node> nodes = xPathParser.visit(tree);
 

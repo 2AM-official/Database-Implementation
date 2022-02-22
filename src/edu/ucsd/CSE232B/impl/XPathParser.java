@@ -627,7 +627,8 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
         path.add(current);
         helper(ctx, 0, ctx.forClause().var().size(), result, path);
-        variableMap = path.get(path.size()-1);
+        //TODO: potential 0 or the last one
+        variableMap = path.get(0);
         return result;
     }
 
@@ -657,5 +658,25 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             path.remove(path.size()-1);
             variableMap = path.get(path.size()-1);
         }
+    }
+
+    @Override
+    public ArrayList<Node> visitLetClause(ExpressionGrammarParser.LetClauseContext ctx) {
+        ArrayList<Node> res = new ArrayList<>();
+        int size = ctx.var().size();
+        for (int i = 0; i < size; i++) {
+            this.variableMap.put(ctx.var(i).getText(), visit(ctx.xq(i)));
+        }
+        return res;
+    }
+
+    @Override
+    public ArrayList<Node> visitWhereClause(ExpressionGrammarParser.WhereClauseContext ctx) {
+        return visit(ctx.cond());
+    }
+
+    @Override
+    public ArrayList<Node> visitReturnClause(ExpressionGrammarParser.ReturnClauseContext ctx) {
+        return visit(ctx.xq());
     }
 }

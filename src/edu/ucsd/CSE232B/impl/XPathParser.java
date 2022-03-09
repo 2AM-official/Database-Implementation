@@ -78,9 +78,11 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
     @Override public ArrayList<Node> visitDoc(ExpressionGrammarParser.DocContext ctx) {
         try {
             File xmlFile = new File(parseStr(ctx.fileName().getText()));
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            this.xmlDocument = builder.parse(xmlFile);
+            if(xmlDocument == null || !xmlFile.toURI().toString().equals(xmlDocument.getDocumentURI())){
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                this.xmlDocument = builder.parse(xmlFile);
+            }
             this.currentNode = xmlDocument.getDocumentElement().getParentNode();
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
@@ -382,7 +384,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
     @Override
     public ArrayList<Node> visitStrXQ(ExpressionGrammarParser.StrXQContext ctx) {
-        Node textNode = xmlDocument.createTextNode(ctx.STRCON().getText());
+        Node textNode = xmlDocument.createTextNode(parseStr(ctx.STRCON().getText()));
         ArrayList<Node> result = new ArrayList<>();
         result.add(textNode);
         return result;
@@ -452,12 +454,10 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             }
             return null;
         }
-        ArrayList<Node> children = visit(ctx.xq());
+        ArrayList<Node> children = visit(ctx.xq(0));
         Element ele = xmlDocument.createElement(ctx.tagName(0).ID().getText());
         for(Node child: children){
             Node childCopy = child.cloneNode(true);
-            System.out.println(ele.getOwnerDocument().getDocumentURI());
-            System.out.println(childCopy.getOwnerDocument().getDocumentURI());
             ele.appendChild(childCopy);
         }
         ArrayList<Node> result = new ArrayList<>();
@@ -473,6 +473,25 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         ArrayList<Node> c2 = visit(ctx.xq(1));
         for (Node n1: c1) {
             for (Node n2: c2) {
+                if (n1.isEqualNode(n2)) {
+                    pointer.add(n1);
+                    return pointer;
+                }
+            }
+        }
+        return pointer;
+    }
+
+    @Override
+    public ArrayList<Node> visitEq2Cond(ExpressionGrammarParser.Eq2CondContext ctx) {
+        ArrayList<Node> pointer = new ArrayList<>();
+        ArrayList<Node> c1 = visit(ctx.xq(0));
+        ArrayList<Node> c2 = visit(ctx.xq(1));
+        for (Node n1: c1) {
+            for (Node n2: c2) {
+                if(n1.getTextContent().equals("FLAVIUS")){
+                    n1=n1;
+                }
                 if (n1.isEqualNode(n2)) {
                     pointer.add(n1);
                     return pointer;
@@ -638,14 +657,14 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         return res;
     }
 
-    @Override
-    public ArrayList<Node> visitLetXQ(ExpressionGrammarParser.LetXQContext ctx) {
-        int size = ctx.letClause().var().size();
-        for (int i = 0; i < size; i++) {
-            variableMap.put(ctx.letClause().var(i).ID().getText(), visit(ctx.letClause().xq(i)));
-        }
-        return visit(ctx.letClause().xq(size));
-    }
+//    @Override
+//    public ArrayList<Node> visitLetXQ(ExpressionGrammarParser.LetXQContext ctx) {
+//        int size = ctx.letClause().var().size();
+//        for (int i = 0; i < size; i++) {
+//            variableMap.put(ctx.letClause().var(i).ID().getText(), visit(ctx.letClause().xq(i)));
+//        }
+//        return visit(ctx.letClause().xq(size));
+//    }
 
 
     @Override
@@ -680,6 +699,9 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             ArrayList<Node> v= new ArrayList<>();
             v.add(node);
             n.put(k, v);
+            if(k.equals("x")){
+                System.out.println("for "+k+"="+node.getTextContent());
+            }
 
             path.add(n);
             variableMap = path.get(path.size()-1);

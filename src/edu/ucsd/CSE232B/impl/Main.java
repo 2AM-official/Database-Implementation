@@ -20,12 +20,16 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) throws TransformerException, IOException, ParserConfigurationException {
         Scanner scanner = new Scanner(System.in);
-//        String expression = args[0];
         while(true) {
+            System.out.println("Input number of lines:");
+            int n = scanner.nextInt();
             System.out.println("Input your XQuery Query: ");
-            String expression = scanner.nextLine();
+            StringBuilder expression = new StringBuilder();
+            for(int i=0; i<n; i++){
+                expression.append(scanner.nextLine());
+            }
 
-            final ExpressionGrammarLexer lexer = new ExpressionGrammarLexer(CharStreams.fromString(expression));
+            final ExpressionGrammarLexer lexer = new ExpressionGrammarLexer(CharStreams.fromString(expression.toString()));
             final CommonTokenStream tokens = new CommonTokenStream(lexer);
             final ExpressionGrammarParser parser = new ExpressionGrammarParser(tokens);
 

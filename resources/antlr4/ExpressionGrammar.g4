@@ -11,9 +11,10 @@ xq  : var                                           #varXQ
     | xq ',' xq                                     #commaXQ
     | xq '/' rp                                     #directXQ
     | xq '//' rp                                    #indirectXQ
-    | '<' tagName '>' '{' xq '}' '</' tagName '>'   #tagNameXQ
+    | '<' tagName '>' '{'? xq* '}'? '</' tagName '>'   #tagNameXQ
     | forClause letClause? whereClause? returnClause #statementXQ
     | letClause xq                                   #letXQ
+    | 'join' '(' xq (',' xq)* ',' '[' ID (',' ID)* ']' ',' '[' ID (',' ID)* ']' ')' #joinXQ
     ;
 
 forClause  : 'for' var 'in' xq (',' var 'in' xq)* ;
@@ -69,7 +70,7 @@ f   : rp            #rpFilter
  fileName: STRCON;
 
  IS: '==' | 'is';
- ID: [_a-zA-Z][a-zA-Z_0-9]*;
+ ID: [_a-zA-Z][a-zA-Z_0-9\-]*;
 
  STRCON:
     '"'('\\' (['"\\]) | ~["\\])* '"'

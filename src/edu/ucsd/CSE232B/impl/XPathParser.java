@@ -454,7 +454,10 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             }
             return null;
         }
-        ArrayList<Node> children = visit(ctx.xq(0));
+        ArrayList<Node> children = new ArrayList<>();
+        for(int i=0; i<ctx.xq().size(); i++){
+            children.addAll(visit(ctx.xq(i)));
+        }
         Element ele = xmlDocument.createElement(ctx.tagName(0).ID().getText());
         for(Node child: children){
             Node childCopy = child.cloneNode(true);
@@ -677,6 +680,60 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         helper(ctx, 0, ctx.forClause().var().size(), result, path);
         //TODO: potential 0 or the last one
         variableMap = path.get(0);
+        return result;
+    }
+
+    private boolean checkJoin(Node tuple1, Node tuple2, ArrayList<String> tagNames1, ArrayList<String> tagNames2){
+        HashMap<String, Node> tupleMap1 = new HashMap<>();
+        HashMap<String, Node> tupleMap2 = new HashMap<>();
+
+        for(int i=0; i<tuple1.getChildNodes().getLength(); i++){
+            Node node = tuple1.getChildNodes().item(i);
+            tupleMap1.put(node.getNodeName(), node);
+        }
+
+        for(int j=0; j<tuple2.getChildNodes().getLength(); j++){
+            Node node = tuple2.getChildNodes().item(j);
+            tupleMap2.put(node.getNodeName(), node);
+        }
+
+        for(int i=0; i<tagNames1.size(); i++){
+            if(!tupleMap1.get(tagNames1.get(i)).isEqualNode(tupleMap2.get(tagNames2.get(i)))){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public ArrayList<Node> visitJoinXQ(ExpressionGrammarParser.JoinXQContext ctx) {
+        ArrayList<Node> xqRes1 = visit(ctx.xq(0));
+        ArrayList<Node> xqRes2 = visit(ctx.xq(1));
+
+        ArrayList<String> tagName1 = new ArrayList<>();
+        ArrayList<String> tagName2 = new ArrayList<>();
+
+        for(int i=0; i<ctx.nameListClause(0).ID().size(); i++){
+            tagName1.add(ctx.nameListClause(0).ID(i).getText());
+        }
+
+        for(int i=0; i<ctx.nameListClause(1).ID().size(); i++){
+            tagName2.add(ctx.nameListClause(1).ID(i).getText());
+        }
+
+        ArrayList<Node> result = new ArrayList<>();
+        for(Node tuple1 : xqRes1){
+            for(Node tuple2: xqRes2){
+                if(checkJoin(tuple1, tuple2, tagName1, tagName2)){
+                    for(int i=0; i<tuple2.getChildNodes().getLength(); i++){
+                        tuple1.appendChild(tuple2.getChildNodes().item(i));
+                    }
+                    result.add(tuple1);
+                }
+            }
+        }
+
         return result;
     }
 

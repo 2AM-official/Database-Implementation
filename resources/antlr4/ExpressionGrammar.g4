@@ -14,13 +14,14 @@ xq  : var                                           #varXQ
     | '<' tagName '>' '{'? xq* '}'? '</' tagName '>'   #tagNameXQ
     | forClause letClause? whereClause? returnClause #statementXQ
     | letClause xq                                   #letXQ
-    | 'join' '(' xq (',' xq)* ',' '[' ID (',' ID)* ']' ',' '[' ID (',' ID)* ']' ')' #joinXQ
+    | 'join' '(' xq ',' xq ',' nameListClause ',' nameListClause ')' #joinXQ
     ;
 
 forClause  : 'for' var 'in' xq (',' var 'in' xq)* ;
 letClause  : 'let' var ':=' xq (',' var 'in' xq)* ;
 whereClause : 'where' cond ;
 returnClause: 'return' xq ;
+nameListClause: '[' ID (',' ID)* ']' ;
 
 cond: xq 'eq' xq                                               #eq1Cond
     | xq '=' xq                                                #eq2Cond

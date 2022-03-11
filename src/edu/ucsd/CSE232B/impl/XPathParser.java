@@ -12,8 +12,13 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.util.*;
 
@@ -745,8 +750,8 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             StringBuilder keyBuilder = new StringBuilder();
             HashMap<String, String> tupleMap = new HashMap<>();
             for(int i=0; i<tuple.getChildNodes().getLength(); i++){
-                tupleMap.put(tuple.getChildNodes().item(i).getNodeName(), tuple.getChildNodes().item(i).toString());
-                System.out.println(tuple.getChildNodes().item(i).toString());
+                tupleMap.put(tuple.getChildNodes().item(i).getNodeName(), tuple.getChildNodes().item(i).getTextContent());
+//                System.out.println(tuple.getChildNodes().item(i).getTextContent());
             }
             // generate key string
             for(int i=0; i<tuple.getChildNodes().getLength(); i++){
@@ -762,14 +767,15 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
             }else{
                 joinHashMap.get(keyBuilder.toString()).add(tuple);
             }
+//            System.out.println(tuple.getChildNodes().getLength());
         }
 
         for(Node tuple: xqRes2){
             StringBuilder keyBuilder = new StringBuilder();
             HashMap<String, String> tupleMap = new HashMap<>();
             for(int i=0; i<tuple.getChildNodes().getLength(); i++){
-                tupleMap.put(tuple.getChildNodes().item(i).getNodeName(), tuple.getChildNodes().item(i).toString());
-                System.out.println(tuple.getChildNodes().item(i).toString());
+                tupleMap.put(tuple.getChildNodes().item(i).getNodeName(), tuple.getChildNodes().item(i).getTextContent());
+//                System.out.println(tuple.getChildNodes().item(i).getTextContent());
             }
             // generate key string
             for(int i=0; i<tuple.getChildNodes().getLength(); i++){
@@ -781,10 +787,15 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
             if(joinHashMap.containsKey(keyBuilder.toString())){
                 for(Node tuple2: joinHashMap.get(keyBuilder.toString())){
+//                    System.out.println(tuple2.getChildNodes().getLength());
                     Node newTuple = tuple.cloneNode(true);
                     for(int i=0; i<tuple2.getChildNodes().getLength(); i++){
-                        newTuple.appendChild(tuple2.getChildNodes().item(i));
+                        newTuple.appendChild(tuple2.getChildNodes().item(i).cloneNode(true));
                     }
+//                    for(int i=0; i<tuple2.getChildNodes().getLength(); i++){
+//                        System.out.println(tuple2.getChildNodes().item(i).getNodeName());
+//                    }
+//                    System.out.println();
                     result.add(newTuple);
                 }
             }
@@ -795,7 +806,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
     @Override
     public ArrayList<Node> visitJoinXQ(ExpressionGrammarParser.JoinXQContext ctx) {
-        System.out.println(ctx.xq(0).getText());
+//        System.out.println(ctx.xq(0).getText());
         ArrayList<Node> xqRes1 = visit(ctx.xq(0));
         ArrayList<Node> xqRes2 = visit(ctx.xq(1));
 
@@ -809,6 +820,59 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
         for(int i=0; i<ctx.nameListClause(1).ID().size(); i++){
             tagName2.add(ctx.nameListClause(1).ID(i).getText());
         }
+
+//        FileWriter fw = null;
+//        try {
+//            fw = new FileWriter("output.file");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        for(Node node: xqRes2){
+//            try {
+//                fw.write(node.getChildNodes().getLength()+"\n");
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        try {
+//            fw.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+//        // Set up the output transformer
+//        TransformerFactory transfac = TransformerFactory.newInstance();
+//        Transformer trans = null;
+//        try {
+//            trans = transfac.newTransformer();
+//        } catch (TransformerConfigurationException e) {
+//            e.printStackTrace();
+//        }
+//        trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+//        trans.setOutputProperty(OutputKeys.INDENT, "yes");
+//        trans.setOutputProperty(OutputKeys.METHOD, "xml");
+//        // Print the DOM node
+//        FileWriter sw = null;
+//        try {
+//            sw = new FileWriter("output_file");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        StreamResult res = new StreamResult(sw);
+//
+//        for (int i = 0; i < xqRes1.size(); i++) {
+//            DOMSource source = new DOMSource(xqRes1.get(i));
+//            try {
+//                trans.transform(source, res);
+//            } catch (TransformerException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        try {
+//            sw.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         return join(xqRes1, xqRes2, tagName1, tagName2);
 

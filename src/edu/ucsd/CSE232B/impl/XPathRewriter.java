@@ -85,8 +85,8 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
                         if(joinClauseB.length()>1){
                             joinClauseB.append(", ");
                         }
-                        joinClauseA.append(var.substring(1));
-                        joinClauseB.append(eqObj.substring(1));
+                        joinClauseB.append(var.substring(1));
+                        joinClauseA.append(eqObj.substring(1));
                     }
                 }
             }

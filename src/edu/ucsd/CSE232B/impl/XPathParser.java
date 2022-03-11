@@ -795,6 +795,7 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 
     @Override
     public ArrayList<Node> visitJoinXQ(ExpressionGrammarParser.JoinXQContext ctx) {
+        System.out.println(ctx.xq(0).getText());
         ArrayList<Node> xqRes1 = visit(ctx.xq(0));
         ArrayList<Node> xqRes2 = visit(ctx.xq(1));
 

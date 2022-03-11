@@ -3,9 +3,7 @@ package edu.ucsd.CSE232B.impl;
 import edu.ucsd.CSE232B.parsers.ExpressionGrammarBaseVisitor;
 import edu.ucsd.CSE232B.parsers.ExpressionGrammarParser;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
     private HashMap<String, String> parents = new HashMap<>();
@@ -33,10 +31,12 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
         result.append("for ");
         returnClause.append(" return <tuple>\n");
         for(String var: varGroup){
+            if(result.length()>4){
+                result.append(", \n");
+            }
             result.append(var);
             result.append(" in ");
             result.append(varQueryGraph.get(var));
-            result.append(", \n");
 
             if(eqMap.containsKey(var)){
                 for(String eqObj: eqMap.get(var)){
@@ -52,10 +52,10 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
             }
 
             String varName = var.substring(1);
-            returnClause.append(String.format("<%s>{%s}<%s>, \n", varName, var, varName));
+            returnClause.append(String.format("<%s>{%s}</%s> \n", varName, var, varName));
         }
         if(whereClause.length()>0){
-            whereClause.insert(0, "where ");
+            whereClause.insert(0, " where ");
         }
         returnClause.append("</tuple>");
         result.append(whereClause);
@@ -108,6 +108,7 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
         ExpressionGrammarParser.WhereClauseContext whereClauseContext = ctx.whereClause();
 
         HashMap<String, String> dependencyGraph = new HashMap<>();
+        HashMap<String, ArrayList<String>> reverseDependencyGraph = new HashMap<>();
         for(int i=0; i<forClauseContext.var().size(); i++){
             String var = ctx.forClause().var(i).getText();
             String xq = ctx.forClause().xq(i).getText();
@@ -116,6 +117,13 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
             if(xq.charAt(0)=='$'){
                 String dependency = xq.split("/")[0];
                 dependencyGraph.put(var, dependency);
+                if(reverseDependencyGraph.containsKey(dependency)){
+                    reverseDependencyGraph.get(dependency).add(var);
+                }else{
+                    ArrayList<String> v = new ArrayList<>();
+                    v.add(var);
+                    reverseDependencyGraph.put(dependency, v);
+                }
             }else{
                 dependencyGraph.put(var, null);
             }
@@ -125,6 +133,9 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
         String[] condList = cond.split("and");
         for(String eq: condList){
             String[] pair = eq.split("eq");
+            if(pair.length!=2){
+                pair = eq.split("=");
+            }
             pair[0] = pair[0].trim();
             pair[1] = pair[1].trim();
             if(eqMap.containsKey(pair[0])){
@@ -149,7 +160,7 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
             parents.put(key, key);
         }
 
-        System.out.println(dependencyGraph);
+//        System.out.println(dependencyGraph);
 
         for(String key: dependencyGraph.keySet()){
             if(dependencyGraph.get(key)==null){
@@ -160,22 +171,35 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
             union(pKey, pDepend);
         }
 
-        System.out.println(parents);
+//        System.out.println(parents);
 
-        HashSet<String> groupJoined = new HashSet<>();
+        HashSet<String> rootSet = new HashSet<>();
         for(String var: parents.keySet()){
             String par = find(var);
-            if(rootGroupMap.containsKey(par)){
-                rootGroupMap.get(par).add(var);
-            }else{
-                ArrayList<String> group = new ArrayList<>();
-                group.add(var);
-                rootGroupMap.put(par, group);
-            }
+            rootSet.add(par);
         }
 
-        System.out.println(rootGroupMap);
+        for(String root: rootSet){
+            ArrayList<String> groupList = new ArrayList<>();
+            LinkedList<String> bfsQueue = new LinkedList<>();
+            bfsQueue.addLast(root);
+            groupList.add(root);
+            while(!bfsQueue.isEmpty()){
+                String cur = bfsQueue.getFirst();
+                if(reverseDependencyGraph.containsKey(cur)){
+                    for(String child: reverseDependencyGraph.get(cur)){
+                        bfsQueue.addLast(child);
+                        groupList.add(child);
+                    }
+                }
+                bfsQueue.removeFirst();
+            }
+            rootGroupMap.put(root, groupList);
+        }
 
+//        System.out.println(rootGroupMap);
+
+        HashSet<String> groupJoined = new HashSet<>();
         StringBuilder resultBuilder = new StringBuilder();
         boolean isFirst = true;
         for(String root: rootGroupMap.keySet()){
@@ -190,7 +214,23 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
             groupJoined.add(root);
         }
 
-        
+        resultBuilder.insert(0, "for $tuple in ");
+        resultBuilder.append(" \n");
+
+        String returnClause = ctx.returnClause().getText();
+        boolean isVar = false;
+        for (int i = 0; i < returnClause.length(); i++) {
+            char c = returnClause.charAt(i);
+            if (isVar && !Character.isDigit(c) && !Character.isLetter(c)) {
+                returnClause = returnClause.substring(0, i) + "/*" + returnClause.substring(i);
+                isVar = false;
+            }
+            if (c == '$') {
+                isVar = true;
+            }
+        }
+        returnClause = returnClause.replace("$", "$tuple/");
+        resultBuilder.append(returnClause);
 
         return resultBuilder.toString();
     }

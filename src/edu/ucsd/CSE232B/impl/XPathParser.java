@@ -754,11 +754,9 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 //                System.out.println(tuple.getChildNodes().item(i).getTextContent());
             }
             // generate key string
-            for(int i=0; i<tuple.getChildNodes().getLength(); i++){
-                for(String tagName: tagName1){
-                    keyBuilder.append(tupleMap.get(tagName));
-                    keyBuilder.append(' ');
-                }
+            for(String tagName: tagName1){
+                keyBuilder.append(tupleMap.get(tagName));
+                keyBuilder.append(' ');
             }
             if(!joinHashMap.containsKey(keyBuilder.toString())){
                 ArrayList<Node> val = new ArrayList<>();
@@ -778,11 +776,9 @@ public class XPathParser extends ExpressionGrammarBaseVisitor<ArrayList<Node>> {
 //                System.out.println(tuple.getChildNodes().item(i).getTextContent());
             }
             // generate key string
-            for(int i=0; i<tuple.getChildNodes().getLength(); i++){
-                for(String tagName: tagName2){
-                    keyBuilder.append(tupleMap.get(tagName));
-                    keyBuilder.append(' ');
-                }
+            for(String tagName: tagName2){
+                keyBuilder.append(tupleMap.get(tagName));
+                keyBuilder.append(' ');
             }
 
             if(joinHashMap.containsKey(keyBuilder.toString())){

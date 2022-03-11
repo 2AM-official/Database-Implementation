@@ -78,6 +78,7 @@ public class Main {
         StringBuilder expressionBuilder = new StringBuilder();
         while(scanner.hasNextLine()){
             expressionBuilder.append(scanner.nextLine());
+            expressionBuilder.append("\n");
         }
 
         System.out.println("The rewritten query:");
@@ -85,6 +86,7 @@ public class Main {
         System.out.println();
         System.out.println("original query:");
         evaluate(expressionBuilder.toString());
+        System.out.println();
         System.out.println("rewritten query:");
         evaluate(exprRewritten);
     }

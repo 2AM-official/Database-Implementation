@@ -42,7 +42,7 @@ public class XPathRewriter extends ExpressionGrammarBaseVisitor<String> {
                 for(String eqObj: eqMap.get(var)){
                     if(eqObj.charAt(0)!='$' || find(eqObj).equals(find(var))){
                         if(whereClause.length()>0){
-                            whereClause.append("and ");
+                            whereClause.append(" and ");
                         }
                         whereClause.append(var);
                         whereClause.append(" eq ");
